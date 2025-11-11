@@ -39,9 +39,14 @@ message(STATUS "Using CMake version ${CMAKE_VERSION}")
 option(MZ_COMPAT "Enables compatibility layer" ON)
 # Compression library options
 option(MZ_ZLIB "Enables ZLIB compression" ON)
-option(MZ_BZIP2 "Enables BZIP2 compression" ON)
-option(MZ_LZMA "Enables LZMA & XZ compression" ON)
-option(MZ_ZSTD "Enables ZSTD compression" ON)
+
+# Force zlib-ng compat mode if zlib-ng is fetched internally
+set(ZLIB_COMPAT ON CACHE BOOL "Enable zlib-ng compatibility" FORCE)
+
+option(MZ_BZIP2 "Enables BZIP2 compression" OFF)
+option(MZ_LZMA "Enables LZMA & XZ compression" OFF)
+option(MZ_ZSTD "Enables ZSTD compression" OFF)
+
 cmake_dependent_option(MZ_LIBCOMP "Enables Apple compression" ON "APPLE" OFF)
 option(MZ_FETCH_LIBS "Enables fetching third-party libraries if not found" ${WIN32})
 option(MZ_FORCE_FETCH_LIBS "Enables fetching third-party libraries always" OFF)
@@ -702,52 +707,6 @@ if(MZ_COMPAT)
     target_include_directories(${MINIZIP_TARGET} PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/compat/>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
-endif()
-
-# Install files
-if(NOT SKIP_INSTALL_LIBRARIES AND NOT SKIP_INSTALL_ALL)
-    target_include_directories(${MINIZIP_TARGET} PUBLIC
-        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${MINIZIP_TARGET}>)
-
-    install(TARGETS ${MINIZIP_TARGET} ${MINIZIP_DEP}
-            EXPORT ${MINIZIP_TARGET}
-            INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${MINIZIP_TARGET}"
-            RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
-            ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-            LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
-    install(EXPORT ${MINIZIP_TARGET}
-            DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${MINIZIP_TARGET}"
-            NAMESPACE "MINIZIP::")
-
-    # Create and install CMake package config version file to allow find_package()
-    include(CMakePackageConfigHelpers)
-    write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/${MINIZIP_TARGET}-config-version.cmake
-        COMPATIBILITY SameMajorVersion)
-    set(MINIZIP_CONFIG_CONTENT "@PACKAGE_INIT@\n")
-    if(MINIZIP_DEP_PKG)
-        string(APPEND MINIZIP_CONFIG_CONTENT "include(CMakeFindDependencyMacro)\n")
-        foreach(pkg_name ${MINIZIP_DEP_PKG})
-            string(APPEND MINIZIP_CONFIG_CONTENT "find_dependency(${pkg_name})\n")
-        endforeach()
-    endif()
-    string(APPEND MINIZIP_CONFIG_CONTENT "include(\"\${CMAKE_CURRENT_LIST_DIR}/${MINIZIP_TARGET}.cmake\")")
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/minizip-config.cmake.in ${MINIZIP_CONFIG_CONTENT})
-
-    # Create config for find_package()
-    configure_package_config_file(
-        ${CMAKE_CURRENT_BINARY_DIR}/minizip-config.cmake.in
-        ${MINIZIP_TARGET}-config.cmake
-        INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${MINIZIP_TARGET}")
-
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${MINIZIP_TARGET}-config-version.cmake
-                  ${CMAKE_CURRENT_BINARY_DIR}/${MINIZIP_TARGET}-config.cmake
-            DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${MINIZIP_TARGET}")
-endif()
-if(NOT SKIP_INSTALL_HDR AND NOT SKIP_INSTALL_ALL)
-    install(FILES ${MINIZIP_HDR} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${MINIZIP_TARGET}")
-endif()
-if(NOT SKIP_INSTALL_FILES AND NOT SKIP_INSTALL_ALL)
-    install(FILES ${MINIZIP_PC} DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
 endif()
 
 # Build test executables

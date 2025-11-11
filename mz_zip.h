@@ -16,7 +16,17 @@
 #ifndef MZ_ZIP_H
 #define MZ_ZIP_H
 
+#include <stdint.h>
+
 #ifdef __cplusplus
+
+#include <cstdint>
+using std::uint8_t;
+using std::uint16_t;
+using std::uint32_t;
+using std::uint64_t;
+using std::int64_t;
+
 extern "C" {
 #endif
 
